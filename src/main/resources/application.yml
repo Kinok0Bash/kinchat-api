@@ -1,0 +1,23 @@
+logging:
+  config: 'classpath:log4j2.yml'
+
+spring:
+  application:
+    name: module-name
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://kinoko.su:5432/teamup
+    username: dev_user
+    password: dev_passwd
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /api/module-name/docs
+  swagger-ui:
+    csrf:
+      enabled: true
+    path: /api/module-name/swagger
+
+server:
+  port: 33300

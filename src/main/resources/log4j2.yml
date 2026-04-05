@@ -1,0 +1,50 @@
+Configuration:
+  status: warn
+  name: app-logger
+  Properties:
+    Property:
+      - name: app-name
+        value: "module-name"
+      - name: log-path
+        value: "logs/module-name"
+      - name: log-archive-path
+        value: ${log-path}/archive
+      - name: log-file-pattern
+        value: "[%date{ISO8601}][%-5level][%thread][%class.%method] %message%n"
+      - name: log-console-pattern
+        value: "%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{[%-5level][%t][%class.%method]}{FATAL=magenta, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue}: %msg%n%throwable"
+      - name: log-file-extension-pattern
+        value: "%d{yyyy-MM-dd}-%i"
+
+  Appenders:
+    RollingFile:
+      - name: FILE_LOG
+        fileName: ${log-path}.log
+        filePattern: "${log-archive-path}/${app-name}.log.${log-file-extension-pattern}"
+        PatternLayout:
+          pattern: "${log-file-pattern}"
+          disableAnsi: false
+        DefaultRollOverStrategy:
+          delete:
+            basePath: "${log-archive-path}"
+            maxDepth: 14
+            IfLastModified:
+              age: 14d
+        Policies:
+          TimeBasedTriggeringPolicy: {}
+          SizeBasedTriggeringPolicy:
+            size: 100 MB
+
+    Console:
+      name: CONSOLE_LOG
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "${log-console-pattern}"
+        disableAnsi: false
+
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+        - ref: CONSOLE_LOG
+        - ref: FILE_LOG

@@ -1,0 +1,19 @@
+services:
+  teamup-module-name:
+    build:
+      dockerfile: ./Dockerfile
+      context: ./
+    restart: always
+    image: teamup-module-name
+    container_name: teamup-module-name
+    volumes:
+      - /home/kinoko/logs/teamup/module-name:/logs
+    #      - ./logs:/logs                             # Для отладки на windows машине
+    networks:
+      - teamup
+    ports:
+      - "33300:33300"
+
+networks:
+  teamup:
+    external: true
