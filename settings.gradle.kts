@@ -1,1 +1,1 @@
-rootProject.name = "module-name"
+rootProject.name = "kinchat"

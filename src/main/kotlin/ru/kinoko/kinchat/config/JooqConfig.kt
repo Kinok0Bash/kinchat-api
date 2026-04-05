@@ -1,4 +1,4 @@
-package ru.kinoko.teamup.modulname.config
+package ru.kinoko.kinchat.config
 
 import org.jooq.conf.Settings
 import org.springframework.context.annotation.Bean

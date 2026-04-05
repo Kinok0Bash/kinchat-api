@@ -4,9 +4,9 @@ Configuration:
   Properties:
     Property:
       - name: app-name
-        value: "module-name"
+        value: "kinchat"
       - name: log-path
-        value: "logs/module-name"
+        value: "logs/kinchat"
       - name: log-archive-path
         value: ${log-path}/archive
       - name: log-file-pattern

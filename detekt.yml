@@ -1,5 +1,6 @@
 ktlint:
-  autoCorrect: true
+  active: false
+  autoCorrect: false
   FunctionSignature:
     forceMultilineWhenParameterCountGreaterOrEqualThan: 4
   MultiLineIfElse:

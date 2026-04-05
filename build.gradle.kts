@@ -10,18 +10,20 @@ plugins {
     kotlin("jvm") version "2.3.0"
     kotlin("plugin.spring") version "2.3.0"
     id("nu.studer.jooq") version "10.1"
-    id("org.springframework.boot") version "3.5.6"
+    id("org.springframework.boot") version "3.5.10"
     id("io.spring.dependency-management") version "1.1.7"
     id("dev.detekt") version "2.0.0-alpha.2"
 }
 
-group = "ru.kinoko.teamup"
+group = "ru.kinoko.kinchat"
 version = "1.0.0"
 
 val detektVersion = "2.0.0-alpha.2"
 val jooqVersion = "3.19.29"
+val jwtVersion = "0.12.6"
+val minioVersion = "8.6.0"
 
-val jooqSchemaScript = "src/main/resources/sql/init-tables.sql"
+val jooqSchemaScript = "src/main/resources/db/migration/V1__init_schema.sql"
 
 sourceSets.main {
     java.srcDirs("$buildDir/generated/jooq")
@@ -43,8 +45,20 @@ dependencies {
 
     // Web
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
 
-    // JOOQ
+    // Security
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("io.jsonwebtoken:jjwt-api:$jwtVersion")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwtVersion")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwtVersion")
+
+    // Flyway
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
+    // jOOQ
     implementation("org.springframework.boot:spring-boot-starter-jooq")
     implementation("org.jooq:jooq:$jooqVersion")
     jooqGenerator("org.postgresql:postgresql")
@@ -52,6 +66,13 @@ dependencies {
     jooqGenerator("org.jooq:jooq-meta:$jooqVersion")
     jooqGenerator("org.jooq:jooq-meta-extensions:$jooqVersion")
     runtimeOnly("org.postgresql:postgresql")
+
+    // MinIO
+    implementation("io.minio:minio:$minioVersion")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Detekt
     detektPlugins("dev.detekt:detekt-rules:$detektVersion")
@@ -87,7 +108,7 @@ kotlin {
 detekt {
     buildUponDefaultConfig = true
     config.setFrom(file("$rootDir/detekt.yml"))
-    autoCorrect = true
+    autoCorrect = false
 }
 
 jooq {
@@ -148,7 +169,7 @@ jooq {
                     }
 
                     target = Target().apply {
-                        packageName = "ru.kinoko.teamup.jooq"
+                        packageName = "ru.kinoko.kinchat.jooq"
                         directory = "build/generated/jooq/main"
                     }
                 }

@@ -1,19 +1,53 @@
 services:
-  teamup-module-name:
+  kinchat-db:
+    image: postgres:16.3
+    container_name: kinchat_db
+    hostname: kinchat-db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kinchat}
+      POSTGRES_USER: ${POSTGRES_USER:-dev_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_passwd}
+    volumes:
+      - /home/kinoko/postgresql/kinchat:/var/lib/postgresql/data
+    networks:
+      - backend
+    ports:
+      - "6560:5432"
+
+  kinchat-api:
     build:
       dockerfile: ./Dockerfile
       context: ./
     restart: always
-    image: teamup-module-name
-    container_name: teamup-module-name
+    image: kinchat
+    container_name: kinchat
+    depends_on:
+      - kinchat-db
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://kinchat-db:5432/kinchat}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-dev_user}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-dev_passwd}
+      APP_AUTH_SECRET: ${APP_AUTH_SECRET:-kinchat-super-secret-key-please-change-me-kinchat-super-secret-key}
+      APP_MINIO_LOGIN: ${APP_MINIO_LOGIN:-minioadmin}
+      APP_MINIO_PASSWORD: ${APP_MINIO_PASSWORD:-minioadmin}
+      APP_MINIO_API_URL: ${APP_MINIO_API_URL:-http://minio:9000}
+      APP_MINIO_AVATARS_BUCKET: ${APP_MINIO_AVATARS_BUCKET:-kinchat-avatars}
+      APP_MINIO_AVATARS_PUBLIC_URL_PREFIX: ${APP_MINIO_AVATARS_PUBLIC_URL_PREFIX:-http://minio:9000/messenger-avatars/}
+      APP_MINIO_MESSAGE_FILES_BUCKET: ${APP_MINIO_MESSAGE_FILES_BUCKET:-kinchat-message-files}
+      APP_MINIO_MESSAGE_FILES_PUBLIC_URL_PREFIX: ${APP_MINIO_MESSAGE_FILES_PUBLIC_URL_PREFIX:-http://minio:9000/messenger-message-files/}
     volumes:
-      - /home/kinoko/logs/teamup/module-name:/logs
+      - /home/kinoko/logs/kinchat:/logs
     #      - ./logs:/logs                             # Для отладки на windows машине
     networks:
-      - teamup
+      - backend
     ports:
-      - "33300:33300"
+      - "6565:6565"
 
 networks:
-  teamup:
+  backend:
     external: true

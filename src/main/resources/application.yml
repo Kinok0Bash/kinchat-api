@@ -3,21 +3,48 @@ logging:
 
 spring:
   application:
-    name: module-name
+    name: kinchat
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://kinoko.su:5432/teamup
-    username: dev_user
-    password: dev_passwd
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:6560/kinchat}
+    username: ${SPRING_DATASOURCE_USERNAME:dev_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:dev_passwd}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
 
 springdoc:
   api-docs:
     enabled: true
-    path: /api/module-name/docs
+    path: /api/docs
   swagger-ui:
     csrf:
       enabled: true
-    path: /api/module-name/swagger
+    path: /api/swagger
+
+app:
+  auth:
+    secret: ${APP_AUTH_SECRET:kinchat-super-secret-key-please-change-me-kinchat-super-secret-key}
+    access-life-time: 15m
+    refresh-life-time: 30d
+    ws-ticket-life-time: 5m
+  user:
+    default-avatar-url-template: https://avatar.iran.liara.run/username?username=%s
+  minio:
+    login: ${APP_MINIO_LOGIN:minioadmin}
+    password: ${APP_MINIO_PASSWORD:minioadmin}
+    urls:
+      api: ${APP_MINIO_API_URL:http://minio:9000}
+    avatars:
+      bucket: ${APP_MINIO_AVATARS_BUCKET:kinchat-avatars}
+      public-url-prefix: ${APP_MINIO_AVATARS_PUBLIC_URL_PREFIX:http://minio:9000/messenger-avatars/}
+    message-files:
+      bucket: ${APP_MINIO_MESSAGE_FILES_BUCKET:kinchat-message-files}
+      public-url-prefix: ${APP_MINIO_MESSAGE_FILES_PUBLIC_URL_PREFIX:http://minio:9000/messenger-message-files/}
 
 server:
-  port: 33300
+  port: 6565

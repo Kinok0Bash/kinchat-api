@@ -3,8 +3,8 @@ on:
 
 env:
   JAVA_VERSION: '25'
-  TARGET_DIR: /home/kinoko/teamup/module-name
-  JAR_DIR: /tmp/teamup/module-name
+  TARGET_DIR: /home/kinoko/kinchat
+  JAR_DIR: /tmp/kinchat
 
 jobs:
   build:
@@ -85,6 +85,25 @@ jobs:
         run: |
           sudo cp -r ${{ env.JAR_DIR }}/* ${{ env.TARGET_DIR }}
           sudo rm -r ${{ env.JAR_DIR }}
+
+      - name: Create .env from secret
+        run: |
+          # Пишем .env из секрета (многострочный контент сохраняется корректно)
+          sudo tee "${{ env.TARGET_DIR }}/.env" > /dev/null <<'ENVVARS'
+          ${{ secrets.ENV_FILE }}
+          ENVVARS
+
+          # На случай CRLF из Windows — подчистим
+          sudo sed -i 's/\r$//' "${{ env.TARGET_DIR }}/.env"
+
+          # Владелец и права (не светим лишнего)
+          sudo chown kinoko:kinoko "${{ env.TARGET_DIR }}/.env"
+          sudo chmod 600 "${{ env.TARGET_DIR }}/.env"
+
+      - name: Relax .env permissions for runner
+        run: |
+          sudo chgrp "$(id -gn)" "${{ env.TARGET_DIR }}/.env"
+          sudo chmod 640 "${{ env.TARGET_DIR }}/.env"
 
       - name: Build and deploy with Docker Compose
         run: |
