@@ -43,7 +43,9 @@ class ChatService(
         validatePaging(page, size)
         val totalElements = chatRepository.countChats(currentUser.userId)
         val chats = chatRepository.findChats(currentUser.userId, page, size)
-        val participantProfiles = userService.findPublicUsersByIds(chats.map(ChatParticipantProjection::participantUserId).toSet())
+        val participantProfiles = userService.findPublicUsersByIds(
+            chats.map(ChatParticipantProjection::participantUserId).toSet(),
+        )
         val lastMessages = chats.associate { chat -> chat.chatId to messageRepository.findLatestMessage(chat.chatId) }
         val attachmentsByMessage = attachmentRepository.findAttachments(
             lastMessages.values.mapNotNull { it?.messageId }.toSet(),
@@ -90,8 +92,12 @@ class ChatService(
 
         val totalElements = messageRepository.countMessages(chatId)
         val messages = messageRepository.findMessages(chatId, page, size)
-        val senderProfiles = userService.findPublicUsersByIds(messages.map(MessageProjection::senderUserId).toSet())
-        val attachmentsByMessage = attachmentRepository.findAttachments(messages.map(MessageProjection::messageId).toSet())
+        val senderProfiles = userService.findPublicUsersByIds(
+            messages.map(MessageProjection::senderUserId).toSet(),
+        )
+        val attachmentsByMessage = attachmentRepository.findAttachments(
+            messages.map(MessageProjection::messageId).toSet(),
+        )
 
         return PagedMessagesResponse(
             items = messages.map { message ->
@@ -238,7 +244,8 @@ class ChatService(
     private fun buildAttachmentObjectKey(chatId: UUID, originalFileName: String?): String {
         val now = OffsetDateTime.now()
         val safeFileName = sanitizeFileName(originalFileName ?: "attachment.bin")
-        return "messages/$chatId/${now.year}/${now.monthValue.toString().padStart(2, '0')}/${UUID.randomUUID()}_$safeFileName"
+        val monthSegment = now.monthValue.toString().padStart(2, '0')
+        return "messages/$chatId/${now.year}/$monthSegment/${UUID.randomUUID()}_$safeFileName"
     }
 
     private fun sanitizeFileName(fileName: String): String {

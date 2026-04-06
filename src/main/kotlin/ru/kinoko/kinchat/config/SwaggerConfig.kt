@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme
 @OpenAPIDefinition(
     info = Info(
         title = "KinChat API",
-        description = "Unified KinChat backend: auth, users, chats, attachments and websocket tickets.",
+        description = "Unified KinChat backend: auth, profile, users, chats, attachments and websocket tickets.",
         version = "1.0.0",
     ),
 )

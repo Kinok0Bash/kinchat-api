@@ -24,7 +24,9 @@ class AvatarService(
         validateAvatar(file)
         val currentAvatar = userRepository.findAvatarInfoByUserId(currentUser.userId)
             ?: throw NotFoundException("User was not found")
-        val objectKey = buildAvatarObjectKey(currentUser.login, file)
+        val currentProfile = userRepository.findPublicUserById(currentUser.userId)
+            ?: throw NotFoundException("User was not found")
+        val objectKey = buildAvatarObjectKey(currentProfile.login, file)
         val contentType = file.contentType!!.trim()
         val storedObject = minioStorageService.upload(
             bucket = minioProperties.avatars,

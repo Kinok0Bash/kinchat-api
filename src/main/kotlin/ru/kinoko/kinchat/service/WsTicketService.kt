@@ -46,8 +46,13 @@ class WsTicketService(
     }
 
     private fun portSegment(port: Int, scheme: String): String = when {
-        scheme == "ws" && port == 80 -> ""
-        scheme == "wss" && port == 443 -> ""
+        scheme == "ws" && port == HTTP_PORT -> ""
+        scheme == "wss" && port == HTTPS_PORT -> ""
         else -> ":$port"
+    }
+
+    companion object {
+        private const val HTTP_PORT = 80
+        private const val HTTPS_PORT = 443
     }
 }

@@ -29,6 +29,7 @@ import ru.kinoko.kinchat.dto.user.PublicUserResponse
 import ru.kinoko.kinchat.security.CurrentUserProvider
 import ru.kinoko.kinchat.service.AvatarService
 import ru.kinoko.kinchat.service.UserService
+import ru.kinoko.kinchat.util.ApiConstants
 
 @Validated
 @RestController
@@ -64,18 +65,26 @@ class UserController(
     fun searchUsers(
         @Parameter(description = "Фильтр по login")
         @RequestParam(required = false) login: String?,
+
         @Parameter(description = "Фильтр по firstName")
         @RequestParam(required = false) firstName: String?,
+
         @Parameter(description = "Фильтр по lastName")
         @RequestParam(required = false) lastName: String?,
+
         @Parameter(description = "Режим совпадения для firstName/lastName")
         @RequestParam(defaultValue = "PARTIAL") matchMode: MatchMode,
+
         @Parameter(description = "Исключить текущего пользователя")
         @RequestParam(defaultValue = "true") excludeMe: Boolean,
+
         @Parameter(description = "Номер страницы")
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
+
         @Parameter(description = "Размер страницы")
-        @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
+        @RequestParam(defaultValue = DEFAULT_SEARCH_PAGE_SIZE)
+        @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG)
+        size: Int,
     ): ResponseEntity<PagedUsersResponse> = ResponseEntity.ok(
         userService.searchUsers(
             currentUserId = currentUserProvider.getCurrentUser().userId,
@@ -150,4 +159,8 @@ class UserController(
     ): ResponseEntity<AvatarUploadResponse> = ResponseEntity.ok(
         avatarService.uploadAvatar(currentUserProvider.getCurrentUser(), file),
     )
+
+    companion object {
+        private const val DEFAULT_SEARCH_PAGE_SIZE = "20"
+    }
 }

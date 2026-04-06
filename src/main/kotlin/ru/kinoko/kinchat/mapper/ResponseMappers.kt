@@ -57,7 +57,9 @@ fun ChatParticipantProjection.toResponse(
         "Participant profile was not found for $participantUserId"
     }
     val lastMessage = lastMessages[chatId]
-    val attachments = lastMessage?.let { attachmentsByMessage[it.messageId].orEmpty().map(AttachmentProjection::toResponse) }.orEmpty()
+    val attachments = lastMessage
+        ?.let { message -> attachmentsByMessage[message.messageId].orEmpty().map(AttachmentProjection::toResponse) }
+        .orEmpty()
 
     return ChatSummaryResponse(
         chatId = chatId,

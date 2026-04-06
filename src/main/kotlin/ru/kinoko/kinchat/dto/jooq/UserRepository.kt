@@ -12,6 +12,7 @@ import ru.kinoko.kinchat.jooq.tables.references.USERS_PROFILE
 import java.time.OffsetDateTime
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 @Repository
 class UserRepository(
     private val dsl: DSLContext,
@@ -152,6 +153,61 @@ class UserRepository(
                 avatarObjectKey = record.get(USERS_PROFILE.AVATAR_OBJECT_KEY),
             )
         }
+
+    fun updateProfile(
+        userId: UUID,
+        login: String?,
+        loginLower: String?,
+        firstName: String?,
+        lastName: String?,
+        avatarUrl: String?,
+    ): PublicUserProjection? = dsl.transactionResult { configuration ->
+        val tx = DSL.using(configuration)
+
+        if (login != null && loginLower != null) {
+            val updatedAuthRows = tx
+                .update(USERS_AUTH)
+                .set(USERS_AUTH.LOGIN, login)
+                .set(USERS_AUTH.LOGIN_LOWER, loginLower)
+                .where(USERS_AUTH.USER_ID.eq(userId))
+                .execute()
+
+            if (updatedAuthRows == 0) {
+                return@transactionResult null
+            }
+        }
+
+        val profileUpdate = tx.update(USERS_PROFILE)
+            .set(USERS_PROFILE.UPDATED_AT, OffsetDateTime.now())
+        var shouldUpdateProfile = false
+
+        firstName?.let { updatedFirstName ->
+            profileUpdate.set(USERS_PROFILE.FIRST_NAME, updatedFirstName)
+            shouldUpdateProfile = true
+        }
+
+        lastName?.let { updatedLastName ->
+            profileUpdate.set(USERS_PROFILE.LAST_NAME, updatedLastName)
+            shouldUpdateProfile = true
+        }
+
+        avatarUrl?.let { updatedAvatarUrl ->
+            profileUpdate.set(USERS_PROFILE.AVATAR_URL, updatedAvatarUrl)
+            shouldUpdateProfile = true
+        }
+
+        if (shouldUpdateProfile) {
+            val updatedProfileRows = profileUpdate
+                .where(USERS_PROFILE.USER_ID.eq(userId))
+                .execute()
+
+            if (updatedProfileRows == 0) {
+                return@transactionResult null
+            }
+        }
+
+        findPublicUserById(tx, userId)
+    }
 
     fun updateAvatar(
         userId: UUID,

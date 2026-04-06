@@ -69,8 +69,8 @@ class AuthenticationService(
         }
 
         val user = jwtService.parseRefreshToken(token)
-        userService.getPublicUserProjectionById(user.userId)
-        return issueTokens(user, response)
+        val publicUser = userService.getPublicUserProjectionById(user.userId)
+        return issueTokens(AuthenticatedUser(publicUser.userId, publicUser.login), response)
     }
 
     fun logout(response: HttpServletResponse): LogoutResponse {
