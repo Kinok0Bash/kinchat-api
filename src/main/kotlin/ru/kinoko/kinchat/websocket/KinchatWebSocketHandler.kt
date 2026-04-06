@@ -1,6 +1,7 @@
 package ru.kinoko.kinchat.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.TextMessage
@@ -20,6 +21,7 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 @Component
+@Suppress("TooManyFunctions")
 class KinchatWebSocketHandler(
     private val objectMapper: ObjectMapper,
     private val wsTicketService: WsTicketService,
@@ -28,18 +30,37 @@ class KinchatWebSocketHandler(
     private val userService: UserService,
 ) : TextWebSocketHandler() {
     override fun afterConnectionEstablished(session: WebSocketSession) {
+        log.info(
+            "Websocket connection attempt sessionId={} path={}",
+            session.id,
+            session.uri?.path,
+        )
         val ticket = extractTicket(session) ?: run {
+            log.info(
+                "Websocket connection rejected because ticket is missing or invalid sessionId={}",
+                session.id,
+            )
             closeSession(session, CloseStatus.POLICY_VIOLATION, "Missing or invalid ws ticket")
             return
         }
 
         val userId = wsTicketService.consumeTicket(ticket) ?: run {
+            log.info(
+                "Websocket connection rejected because ticket is expired or already used sessionId={}",
+                session.id,
+            )
             closeSession(session, CloseStatus.POLICY_VIOLATION, "Expired or already used ws ticket")
             return
         }
 
         val login = runCatching { userService.getPublicUserProjectionById(userId).login }
-            .getOrElse {
+            .getOrElse { exception ->
+                log.error(
+                    "Websocket connection failed while resolving user sessionId={} userId={}",
+                    session.id,
+                    userId,
+                    exception,
+                )
                 closeSession(session, CloseStatus.SERVER_ERROR, "Failed to initialize websocket session")
                 return
             }
@@ -47,79 +68,208 @@ class KinchatWebSocketHandler(
         session.attributes[SESSION_USER_ID_ATTRIBUTE] = userId
         realtimeService.registerSession(userId, session)
         realtimeService.sendConnectionReady(session, login)
+        log.info(
+            "Websocket connection established sessionId={} userId={} login={}",
+            session.id,
+            userId,
+            login,
+        )
     }
 
     override fun handleTextMessage(session: WebSocketSession, message: TextMessage) {
+        log.info(
+            "Websocket text frame received sessionId={} payloadLength={}",
+            session.id,
+            message.payload.length,
+        )
         val envelope = parseEnvelope(session, message.payload) ?: return
+        log.info(
+            "Websocket event received sessionId={} event={} requestId={}",
+            session.id,
+            envelope.event,
+            envelope.requestId,
+        )
 
         when (envelope.event) {
             MESSAGE_SEND_EVENT -> handleMessageSend(session, envelope)
-            PING_EVENT -> realtimeService.sendPong(session)
-            null, "" -> sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "Event is required")
-            else -> sendProtocolError(
-                session,
-                envelope.requestId,
-                VALIDATION_ERROR_CODE,
-                "Unsupported event ${envelope.event}",
-            )
+            PING_EVENT -> {
+                log.info("Websocket ping received sessionId={}", session.id)
+                realtimeService.sendPong(session)
+            }
+            null, "" -> {
+                log.info("Websocket event rejected because event name is empty sessionId={}", session.id)
+                sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "Event is required")
+            }
+            else -> {
+                log.info(
+                    "Websocket event rejected because event={} is unsupported sessionId={}",
+                    envelope.event,
+                    session.id,
+                )
+                sendProtocolError(
+                    session,
+                    envelope.requestId,
+                    VALIDATION_ERROR_CODE,
+                    "Unsupported event ${envelope.event}",
+                )
+            }
         }
     }
 
     override fun afterConnectionClosed(session: WebSocketSession, status: CloseStatus) {
+        log.info(
+            "Websocket connection closed sessionId={} code={} reason={}",
+            session.id,
+            status.code,
+            status.reason,
+        )
         realtimeService.unregisterSession(session)
     }
 
     override fun handleTransportError(session: WebSocketSession, exception: Throwable) {
+        log.info(
+            "Websocket transport error sessionId={} open={} cause={}",
+            session.id,
+            session.isOpen,
+            exception.javaClass.simpleName,
+        )
         if (!session.isOpen) {
             realtimeService.unregisterSession(session)
         }
     }
 
     private fun handleMessageSend(session: WebSocketSession, envelope: WsIncomingEnvelope) {
-        val userId = session.attributes[SESSION_USER_ID_ATTRIBUTE] as? UUID ?: run {
-            sendProtocolError(session, envelope.requestId, UNAUTHORIZED_CODE, "Websocket session is not authorized")
-            return
-        }
-        val payload = try {
-            objectMapper.treeToValue(envelope.data, WsMessageSendPayload::class.java)
-        } catch (_: Exception) {
-            sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "Invalid message.send payload")
-            return
-        }
-        val chatId = payload.chatId ?: run {
-            sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "chatId is required")
-            return
-        }
-        val clientMessageId = payload.clientMessageId ?: run {
-            sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "clientMessageId is required")
-            return
-        }
-
+        val command = resolveMessageSendCommand(session, envelope) ?: return
+        log.info(
+            "Processing websocket message.send sessionId={} userId={} chatId={} clientMessageId={} textLength={}",
+            session.id,
+            command.userId,
+            command.chatId,
+            command.clientMessageId,
+            command.text.length,
+        )
         try {
             val result = chatService.sendTextMessage(
-                userId = userId,
-                chatId = chatId,
-                clientMessageId = clientMessageId,
-                text = payload.text.orEmpty(),
+                userId = command.userId,
+                chatId = command.chatId,
+                clientMessageId = command.clientMessageId,
+                text = command.text,
+            )
+            log.info(
+                "Websocket message.send processed sessionId={} chatId={} messageId={} created={}",
+                session.id,
+                command.chatId,
+                result.message.messageId,
+                result.created,
             )
             if (!result.created) {
                 realtimeService.sendMessageCreated(session, result.message)
             }
         } catch (exception: ValidationException) {
-            val code = if (payload.text.orEmpty().trim().isEmpty()) MESSAGE_EMPTY_CODE else VALIDATION_ERROR_CODE
-            sendProtocolError(session, envelope.requestId, code, exception.message)
+            handleMessageSendValidationError(session, envelope.requestId, command, exception)
         } catch (_: ForbiddenException) {
+            log.info(
+                "Websocket message.send rejected because chat access is forbidden sessionId={} chatId={}",
+                session.id,
+                command.chatId,
+            )
             sendProtocolError(session, envelope.requestId, FORBIDDEN_CHAT_ACCESS_CODE, "Chat access denied")
         } catch (_: NotFoundException) {
+            log.info(
+                "Websocket message.send rejected because chat was not found sessionId={} chatId={}",
+                session.id,
+                command.chatId,
+            )
             sendProtocolError(session, envelope.requestId, FORBIDDEN_CHAT_ACCESS_CODE, "Chat access denied")
-        } catch (_: Exception) {
+        } catch (exception: Exception) {
+            log.error(
+                "Websocket message.send failed with internal error sessionId={} chatId={}",
+                session.id,
+                command.chatId,
+                exception,
+            )
             sendProtocolError(session, envelope.requestId, INTERNAL_ERROR_CODE, "Internal server error")
         }
     }
 
+    @Suppress("ReturnCount")
+    private fun resolveMessageSendCommand(
+        session: WebSocketSession,
+        envelope: WsIncomingEnvelope,
+    ): MessageSendCommand? {
+        val userId = resolveSessionUserId(session, envelope.requestId) ?: return null
+        val payload = parseMessageSendPayload(session, envelope) ?: return null
+        val chatId = payload.chatId ?: run {
+            log.info("Websocket message.send rejected because chatId is missing sessionId={}", session.id)
+            sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "chatId is required")
+            return null
+        }
+        val clientMessageId = payload.clientMessageId ?: run {
+            log.info(
+                "Websocket message.send rejected because clientMessageId is missing sessionId={}",
+                session.id,
+            )
+            sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "clientMessageId is required")
+            return null
+        }
+
+        return MessageSendCommand(
+            userId = userId,
+            chatId = chatId,
+            clientMessageId = clientMessageId,
+            text = payload.text.orEmpty(),
+        )
+    }
+
+    private fun resolveSessionUserId(session: WebSocketSession, requestId: String?): UUID? {
+        val userId = session.attributes[SESSION_USER_ID_ATTRIBUTE] as? UUID
+        if (userId == null) {
+            log.info("Websocket message.send rejected because session is unauthorized sessionId={}", session.id)
+            sendProtocolError(session, requestId, UNAUTHORIZED_CODE, "Websocket session is not authorized")
+        }
+        return userId
+    }
+
+    private fun parseMessageSendPayload(
+        session: WebSocketSession,
+        envelope: WsIncomingEnvelope,
+    ): WsMessageSendPayload? = try {
+        objectMapper.treeToValue(envelope.data, WsMessageSendPayload::class.java)
+    } catch (exception: Exception) {
+        log.info(
+            "Websocket message.send rejected because payload is invalid sessionId={} cause={}",
+            session.id,
+            exception.javaClass.simpleName,
+        )
+        sendProtocolError(session, envelope.requestId, VALIDATION_ERROR_CODE, "Invalid message.send payload")
+        null
+    }
+
+    private fun handleMessageSendValidationError(
+        session: WebSocketSession,
+        requestId: String?,
+        command: MessageSendCommand,
+        exception: ValidationException,
+    ) {
+        val code = if (command.text.trim().isEmpty()) MESSAGE_EMPTY_CODE else VALIDATION_ERROR_CODE
+        log.info(
+            "Websocket message.send rejected by validation sessionId={} chatId={} code={} reason={}",
+            session.id,
+            command.chatId,
+            code,
+            exception.message,
+        )
+        sendProtocolError(session, requestId, code, exception.message)
+    }
+
     private fun parseEnvelope(session: WebSocketSession, payload: String): WsIncomingEnvelope? = try {
         objectMapper.readValue(payload, WsIncomingEnvelope::class.java)
-    } catch (_: Exception) {
+    } catch (exception: Exception) {
+        log.info(
+            "Websocket payload rejected because envelope parsing failed sessionId={} cause={}",
+            session.id,
+            exception.javaClass.simpleName,
+        )
         sendProtocolError(session, null, VALIDATION_ERROR_CODE, "Invalid websocket payload")
         null
     }
@@ -141,6 +291,12 @@ class KinchatWebSocketHandler(
         ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
 
     private fun closeSession(session: WebSocketSession, status: CloseStatus, reason: String) {
+        log.info(
+            "Closing websocket session sessionId={} code={} reason={}",
+            session.id,
+            status.code,
+            reason,
+        )
         runCatching {
             session.close(status.withReason(reason.take(MAX_CLOSE_REASON_LENGTH)))
         }
@@ -150,6 +306,13 @@ class KinchatWebSocketHandler(
     private fun sendProtocolError(session: WebSocketSession, requestId: String?, code: String, message: String) {
         realtimeService.sendProtocolError(session, requestId, code, message)
     }
+
+    private data class MessageSendCommand(
+        val userId: UUID,
+        val chatId: UUID,
+        val clientMessageId: UUID,
+        val text: String,
+    )
 
     companion object {
         private const val FORBIDDEN_CHAT_ACCESS_CODE = "FORBIDDEN_CHAT_ACCESS"
@@ -162,5 +325,6 @@ class KinchatWebSocketHandler(
         private const val TICKET_QUERY_PARAM = "ticket"
         private const val UNAUTHORIZED_CODE = "UNAUTHORIZED"
         private const val VALIDATION_ERROR_CODE = "VALIDATION_ERROR"
+        private val log = LoggerFactory.getLogger(KinchatWebSocketHandler::class.java)
     }
 }

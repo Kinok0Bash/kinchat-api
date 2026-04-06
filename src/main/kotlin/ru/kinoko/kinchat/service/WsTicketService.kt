@@ -1,6 +1,7 @@
 package ru.kinoko.kinchat.service
 
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import ru.kinoko.kinchat.dto.ws.WsTicketResponse
 import ru.kinoko.kinchat.properties.AppProperties
@@ -15,17 +16,31 @@ class WsTicketService(
     private val appProperties: AppProperties,
 ) {
     fun issueTicket(userId: UUID, request: HttpServletRequest): WsTicketResponse {
+        logger.info("Issuing websocket ticket userId={}", userId)
         val expiresAt = OffsetDateTime.now().plus(appProperties.auth.wsTicketLifeTime)
         val ticket = wsTicketRepository.createWsTicket(userId, expiresAt)
+        val wsUrl = buildWsUrl(request, ticket)
 
-        return WsTicketResponse(
+        val ticketResponse = WsTicketResponse(
             ticket = ticket,
             expiresAt = expiresAt,
-            wsUrl = buildWsUrl(request, ticket),
+            wsUrl = wsUrl,
         )
+        logger.info(
+            "Websocket ticket issued userId={} expiresAt={} wsEndpoint={}",
+            userId,
+            expiresAt,
+            wsUrl.substringBefore('?'),
+        )
+        return ticketResponse
     }
 
-    fun consumeTicket(ticket: UUID): UUID? = wsTicketRepository.consumeTicket(ticket, OffsetDateTime.now())
+    fun consumeTicket(ticket: UUID): UUID? {
+        logger.info("Consuming websocket ticket")
+        val userId = wsTicketRepository.consumeTicket(ticket, OffsetDateTime.now())
+        logger.info("Websocket ticket consumption completed success={} userId={}", userId != null, userId)
+        return userId
+    }
 
     private fun buildWsUrl(request: HttpServletRequest, ticket: UUID): String {
         val protoHeader = request.getHeader("X-Forwarded-Proto")
@@ -42,6 +57,7 @@ class WsTicketService(
             ?: request.getHeader("Host")
             ?: (request.serverName + portSegment(request.serverPort, scheme))
 
+        logger.info("Resolved websocket endpoint scheme={} host={}", scheme, host)
         return "$scheme://$host/ws?ticket=$ticket"
     }
 
@@ -54,5 +70,6 @@ class WsTicketService(
     companion object {
         private const val HTTP_PORT = 80
         private const val HTTPS_PORT = 443
+        private val logger = LoggerFactory.getLogger(WsTicketService::class.java)
     }
 }

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletResponse
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.CookieValue
 import org.springframework.web.bind.annotation.GetMapping
@@ -56,7 +57,12 @@ class AuthController(
     fun register(
         @Valid @RequestBody request: AuthRegisterRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<AuthTokensResponse> = ResponseEntity.ok(authenticationService.register(request, response))
+    ): ResponseEntity<AuthTokensResponse> {
+        logger.info("HTTP register request received for login={}", request.login.trim())
+        val tokensResponse = authenticationService.register(request, response)
+        logger.info("HTTP register request completed for login={}", tokensResponse.user.login)
+        return ResponseEntity.ok(tokensResponse)
+    }
 
     @PostMapping("/login")
     @Operation(summary = "Логин пользователя")
@@ -82,7 +88,12 @@ class AuthController(
     fun login(
         @Valid @RequestBody request: AuthLoginRequest,
         response: HttpServletResponse,
-    ): ResponseEntity<AuthTokensResponse> = ResponseEntity.ok(authenticationService.login(request, response))
+    ): ResponseEntity<AuthTokensResponse> {
+        logger.info("HTTP login request received for login={}", request.login.trim())
+        val tokensResponse = authenticationService.login(request, response)
+        logger.info("HTTP login request completed for login={}", tokensResponse.user.login)
+        return ResponseEntity.ok(tokensResponse)
+    }
 
     @PostMapping("/refresh")
     @Operation(
@@ -106,7 +117,15 @@ class AuthController(
     fun refresh(
         @CookieValue(value = AuthenticationService.REFRESH_COOKIE_NAME, required = false) refreshToken: String?,
         response: HttpServletResponse,
-    ): ResponseEntity<AuthTokensResponse> = ResponseEntity.ok(authenticationService.refresh(refreshToken, response))
+    ): ResponseEntity<AuthTokensResponse> {
+        logger.info(
+            "HTTP refresh request received cookiePresent={}",
+            !refreshToken.isNullOrBlank(),
+        )
+        val tokensResponse = authenticationService.refresh(refreshToken, response)
+        logger.info("HTTP refresh request completed for login={}", tokensResponse.user.login)
+        return ResponseEntity.ok(tokensResponse)
+    }
 
     @PostMapping("/logout")
     @Operation(
@@ -122,9 +141,12 @@ class AuthController(
             ),
         ],
     )
-    fun logout(response: HttpServletResponse): ResponseEntity<LogoutResponse> = ResponseEntity.ok(
-        authenticationService.logout(response),
-    )
+    fun logout(response: HttpServletResponse): ResponseEntity<LogoutResponse> {
+        logger.info("HTTP logout request received")
+        val logoutResponse = authenticationService.logout(response)
+        logger.info("HTTP logout request completed")
+        return ResponseEntity.ok(logoutResponse)
+    }
 
     @GetMapping("/me")
     @Operation(
@@ -145,7 +167,15 @@ class AuthController(
             ),
         ],
     )
-    fun me(): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
-        authenticationService.me(currentUserProvider.getCurrentUser()),
-    )
+    fun me(): ResponseEntity<PublicUserResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info("HTTP me request received for userId={} login={}", currentUser.userId, currentUser.login)
+        val userResponse = authenticationService.me(currentUser)
+        logger.info("HTTP me request completed for login={}", userResponse.login)
+        return ResponseEntity.ok(userResponse)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(AuthController::class.java)
+    }
 }

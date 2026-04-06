@@ -1,5 +1,6 @@
 package ru.kinoko.kinchat.config
 
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
@@ -18,10 +19,14 @@ class SecurityConfig(
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
 ) {
     @Bean
-    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
+    fun passwordEncoder(): PasswordEncoder {
+        logger.info("Creating BCrypt password encoder bean")
+        return BCryptPasswordEncoder()
+    }
 
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        logger.info("Configuring security filter chain")
         http
             .csrf { it.disable() }
             .formLogin { it.disable() }
@@ -51,6 +56,12 @@ class SecurityConfig(
             }
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter::class.java)
 
-        return http.build()
+        val filterChain = http.build()
+        logger.info("Security filter chain configured")
+        return filterChain
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(SecurityConfig::class.java)
     }
 }
