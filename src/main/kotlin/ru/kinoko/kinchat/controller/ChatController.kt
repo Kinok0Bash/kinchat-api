@@ -31,7 +31,7 @@ import ru.kinoko.kinchat.dto.chat.UploadAttachmentRequest
 import ru.kinoko.kinchat.dto.common.ErrorResponse
 import ru.kinoko.kinchat.security.CurrentUserProvider
 import ru.kinoko.kinchat.service.ChatService
-import java.util.UUID
+import java.util.*
 
 @Validated
 @RestController
@@ -46,8 +46,16 @@ class ChatController(
     @Operation(summary = "Список чатов текущего пользователя")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Страница чатов", content = [Content(schema = Schema(implementation = PagedChatsResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Страница чатов",
+                content = [Content(schema = Schema(implementation = PagedChatsResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun getChats(
@@ -61,10 +69,26 @@ class ChatController(
     @Operation(summary = "Создать или получить direct chat")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Чат найден или создан", content = [Content(schema = Schema(implementation = ChatSummaryResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "404", description = "Собеседник не найден", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Чат найден или создан",
+                content = [Content(schema = Schema(implementation = ChatSummaryResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Собеседник не найден",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun createDirectChat(
@@ -77,11 +101,31 @@ class ChatController(
     @Operation(summary = "История сообщений чата")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Страница сообщений", content = [Content(schema = Schema(implementation = PagedMessagesResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "403", description = "Нет доступа к чату", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "404", description = "Чат не найден", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Страница сообщений",
+                content = [Content(schema = Schema(implementation = PagedMessagesResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Нет доступа к чату",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Чат не найден",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun getMessages(
@@ -96,13 +140,41 @@ class ChatController(
     @Operation(summary = "Загрузить файл или картинку в сообщение")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "201", description = "Файл загружен, сообщение создано", content = [Content(schema = Schema(implementation = MessageResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "403", description = "Нет доступа к чату", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "404", description = "Чат не найден", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "413", description = "Файл слишком большой", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "415", description = "Тип файла не поддерживается", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "201",
+                description = "Файл загружен, сообщение создано",
+                content = [Content(schema = Schema(implementation = MessageResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "403",
+                description = "Нет доступа к чату",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Чат не найден",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "413",
+                description = "Файл слишком большой",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "415",
+                description = "Тип файла не поддерживается",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun uploadAttachment(
