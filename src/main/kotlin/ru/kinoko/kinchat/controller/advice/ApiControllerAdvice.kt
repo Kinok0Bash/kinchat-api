@@ -61,6 +61,7 @@ class ApiControllerAdvice {
     )
 
     @ExceptionHandler(Exception::class)
+    @Suppress("UnusedParameter")
     fun handleUnexpected(exception: Exception, request: HttpServletRequest): ResponseEntity<ErrorResponse> =
         buildResponse(
             status = HttpStatus.INTERNAL_SERVER_ERROR,

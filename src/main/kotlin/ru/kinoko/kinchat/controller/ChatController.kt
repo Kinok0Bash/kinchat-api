@@ -31,6 +31,7 @@ import ru.kinoko.kinchat.dto.chat.UploadAttachmentRequest
 import ru.kinoko.kinchat.dto.common.ErrorResponse
 import ru.kinoko.kinchat.security.CurrentUserProvider
 import ru.kinoko.kinchat.service.ChatService
+import ru.kinoko.kinchat.util.ApiConstants
 import java.util.*
 
 @Validated
@@ -60,7 +61,7 @@ class ChatController(
     )
     fun getChats(
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
-        @RequestParam(defaultValue = "50") @Min(1) @Max(100) size: Int,
+        @RequestParam(defaultValue = DEFAULT_CHAT_PAGE_SIZE) @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG) size: Int,
     ): ResponseEntity<PagedChatsResponse> = ResponseEntity.ok(
         chatService.getChats(currentUserProvider.getCurrentUser(), page, size),
     )
@@ -130,8 +131,12 @@ class ChatController(
     )
     fun getMessages(
         @PathVariable chatId: UUID,
+
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
-        @RequestParam(defaultValue = "50") @Min(1) @Max(100) size: Int,
+
+        @RequestParam(defaultValue = DEFAULT_CHAT_PAGE_SIZE)
+        @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG)
+        size: Int,
     ): ResponseEntity<PagedMessagesResponse> = ResponseEntity.ok(
         chatService.getMessages(currentUserProvider.getCurrentUser(), chatId, page, size),
     )
@@ -183,4 +188,8 @@ class ChatController(
     ): ResponseEntity<MessageResponse> = ResponseEntity
         .status(HttpStatus.CREATED)
         .body(chatService.uploadAttachment(currentUserProvider.getCurrentUser(), chatId, request))
+
+    companion object {
+        private const val DEFAULT_CHAT_PAGE_SIZE = "50"
+    }
 }
