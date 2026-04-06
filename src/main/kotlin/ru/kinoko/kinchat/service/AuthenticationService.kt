@@ -44,7 +44,7 @@ class AuthenticationService(
             passwordHash = passwordEncoder.encode(request.password),
             firstName = firstName,
             lastName = lastName,
-            avatarUrl = userService.buildDefaultAvatarUrl(login),
+            avatarUrl = userService.buildDefaultAvatarUrl(firstName, lastName),
         )
 
         return issueTokens(AuthenticatedUser(publicUser.userId, publicUser.login), response)

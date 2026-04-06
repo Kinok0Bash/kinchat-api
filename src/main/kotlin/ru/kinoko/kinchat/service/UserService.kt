@@ -84,12 +84,12 @@ class UserService(
         return normalized
     }
 
-    fun buildDefaultAvatarUrl(login: String): String {
+    fun buildDefaultAvatarUrl(firstName: String, lastName: String): String {
         val template = appProperties.user.defaultAvatarUrlTemplate
         return if (template.contains("%s")) {
-            template.format(login)
+            template.format("$firstName+$lastName")
         } else {
-            template + login
+            "$template$firstName+$lastName"
         }
     }
 
