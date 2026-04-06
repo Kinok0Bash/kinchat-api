@@ -16,7 +16,7 @@ class CorsConfig {
         configuration.applyPermitDefaultValues()
         configuration.allowedOriginPatterns = listOf(
             "http://localhost:5173",
-            "https://kinoko.su",
+            "https://bank.kinoko.su",
         )
         configuration.allowedMethods = listOf("*")
         configuration.allowedHeaders = listOf("*")
