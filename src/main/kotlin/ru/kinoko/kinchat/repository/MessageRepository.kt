@@ -97,8 +97,11 @@ class MessageRepository(
         }
 
         if (inserted == null) {
+            val existingMessage = requireNotNull(
+                findByClientMessageId(tx, chatId, senderUserId, requireNotNull(clientMessageId)),
+            )
             return@transactionResult PersistedMessage(
-                message = requireNotNull(findByClientMessageId(tx, chatId, senderUserId, requireNotNull(clientMessageId))),
+                message = existingMessage,
                 created = false,
             )
         }

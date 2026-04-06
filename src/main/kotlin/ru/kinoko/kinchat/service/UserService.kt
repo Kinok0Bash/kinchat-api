@@ -1,14 +1,14 @@
 package ru.kinoko.kinchat.service
 
 import org.springframework.stereotype.Service
+import ru.kinoko.kinchat.dto.jooq.PublicUserProjection
+import ru.kinoko.kinchat.dto.jooq.UserRepository
 import ru.kinoko.kinchat.dto.user.MatchMode
 import ru.kinoko.kinchat.dto.user.PagedUsersResponse
 import ru.kinoko.kinchat.exception.NotFoundException
 import ru.kinoko.kinchat.exception.ValidationException
 import ru.kinoko.kinchat.mapper.toResponse
 import ru.kinoko.kinchat.properties.AppProperties
-import ru.kinoko.kinchat.dto.jooq.PublicUserProjection
-import ru.kinoko.kinchat.dto.jooq.UserRepository
 import ru.kinoko.kinchat.util.ApiConstants
 import ru.kinoko.kinchat.util.calculateTotalPages
 import java.util.Locale
@@ -30,9 +30,13 @@ class UserService(
         .findPublicUserByLoginLower(normalizeLogin(login))
         ?: throw NotFoundException("User was not found")
 
-    fun findPublicUsersByIds(userIds: Set<UUID>): Map<UUID, PublicUserProjection> = userRepository.findPublicUsersByIds(userIds)
+    fun findPublicUsersByIds(
+        userIds: Set<UUID>,
+    ): Map<UUID, PublicUserProjection> = userRepository.findPublicUsersByIds(userIds)
 
-    fun findUserIdByLogin(login: String): UUID? = userRepository.findUserIdByLoginLower(normalizeLogin(login))
+    fun findUserIdByLogin(
+        login: String,
+    ): UUID? = userRepository.findUserIdByLoginLower(normalizeLogin(login))
 
     fun searchUsers(
         currentUserId: UUID,
