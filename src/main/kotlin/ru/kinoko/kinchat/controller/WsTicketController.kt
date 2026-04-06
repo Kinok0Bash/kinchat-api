@@ -29,8 +29,16 @@ class WsTicketController(
     @Operation(summary = "Выдать ws-ticket")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Тикет выдан", content = [Content(schema = Schema(implementation = WsTicketResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Тикет выдан",
+                content = [Content(schema = Schema(implementation = WsTicketResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun issueTicket(request: HttpServletRequest): ResponseEntity<WsTicketResponse> = ResponseEntity.ok(

@@ -33,7 +33,7 @@ app:
     refresh-life-time: 30d
     ws-ticket-life-time: 5m
   user:
-    default-avatar-url-template: https://avatar.iran.liara.run/username?username=%s
+    default-avatar-url-template: https://ui-avatars.com/api/?background=random&name=%s
   minio:
     login: ${APP_MINIO_LOGIN:minioadmin}
     password: ${APP_MINIO_PASSWORD:minioadmin}

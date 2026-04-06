@@ -44,9 +44,21 @@ class UserController(
     @Operation(summary = "Поиск пользователей")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Страница результатов поиска", content = [Content(schema = Schema(implementation = PagedUsersResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Страница результатов поиска",
+                content = [Content(schema = Schema(implementation = PagedUsersResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun searchUsers(
@@ -81,9 +93,21 @@ class UserController(
     @Operation(summary = "Получить пользователя по login")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Пользователь найден", content = [Content(schema = Schema(implementation = PublicUserResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "404", description = "Пользователь не найден", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Пользователь найден",
+                content = [Content(schema = Schema(implementation = PublicUserResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "Пользователь не найден",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun getUserByLogin(@PathVariable login: String): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
@@ -94,11 +118,31 @@ class UserController(
     @Operation(summary = "Заменить аватарку текущего пользователя")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Аватарка заменена", content = [Content(schema = Schema(implementation = AvatarUploadResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный файл", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "413", description = "Файл слишком большой", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "415", description = "Тип файла не поддерживается", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Аватарка заменена",
+                content = [Content(schema = Schema(implementation = AvatarUploadResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный файл",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "413",
+                description = "Файл слишком большой",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "415",
+                description = "Тип файла не поддерживается",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun uploadAvatar(

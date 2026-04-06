@@ -36,9 +36,21 @@ class AuthController(
     @Operation(summary = "Регистрация пользователя")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Регистрация успешна", content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "409", description = "Логин уже занят", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Регистрация успешна",
+                content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "409",
+                description = "Логин уже занят",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun register(
@@ -50,9 +62,21 @@ class AuthController(
     @Operation(summary = "Логин пользователя")
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Логин успешен", content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]),
-            ApiResponse(responseCode = "400", description = "Некорректный запрос", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Неверный логин или пароль", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Логин успешен",
+                content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "400",
+                description = "Некорректный запрос",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Неверный логин или пароль",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun login(
@@ -67,8 +91,16 @@ class AuthController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Токены обновлены", content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Refresh token отсутствует или невалиден", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Токены обновлены",
+                content = [Content(schema = Schema(implementation = AuthTokensResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Refresh token отсутствует или невалиден",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun refresh(
@@ -83,7 +115,11 @@ class AuthController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Выход выполнен", content = [Content(schema = Schema(implementation = LogoutResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Выход выполнен",
+                content = [Content(schema = Schema(implementation = LogoutResponse::class))]
+            ),
         ],
     )
     fun logout(response: HttpServletResponse): ResponseEntity<LogoutResponse> = ResponseEntity.ok(
@@ -97,8 +133,16 @@ class AuthController(
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "200", description = "Текущий пользователь", content = [Content(schema = Schema(implementation = PublicUserResponse::class))]),
-            ApiResponse(responseCode = "401", description = "Требуется авторизация", content = [Content(schema = Schema(implementation = ErrorResponse::class))]),
+            ApiResponse(
+                responseCode = "200",
+                description = "Текущий пользователь",
+                content = [Content(schema = Schema(implementation = PublicUserResponse::class))]
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "Требуется авторизация",
+                content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+            ),
         ],
     )
     fun me(): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
