@@ -3,7 +3,7 @@ on:
 
 env:
   JAVA_VERSION: '25'
-  TARGET_DIR: /home/kinoko/kinchat
+  TARGET_DIR: /home/kinoko/kinchat/api
   JAR_DIR: /tmp/kinchat
 
 jobs:
