@@ -2,6 +2,7 @@ package ru.kinoko.kinchat.controller.advice
 
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.ConstraintViolationException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -20,8 +21,17 @@ import java.time.OffsetDateTime
 @RestControllerAdvice
 class ApiControllerAdvice {
     @ExceptionHandler(ApiException::class)
-    fun handleApiException(exception: ApiException, request: HttpServletRequest): ResponseEntity<ErrorResponse> =
-        buildResponse(exception.status, exception.code, exception.message, request)
+    fun handleApiException(exception: ApiException, request: HttpServletRequest): ResponseEntity<ErrorResponse> {
+        logger.info(
+            "Handling api exception method={} path={} status={} code={} message={}",
+            request.method,
+            request.requestURI,
+            exception.status.value(),
+            exception.code,
+            exception.message,
+        )
+        return buildResponse(exception.status, exception.code, exception.message, request)
+    }
 
     @ExceptionHandler(
         MethodArgumentNotValidException::class,
@@ -36,15 +46,22 @@ class ApiControllerAdvice {
         val message = when (exception) {
             is MethodArgumentNotValidException -> exception.bindingResult.fieldErrors
                 .joinToString("; ") { "${it.field}: ${it.defaultMessage ?: "invalid"}" }
-                .ifBlank { "Некорректный запрос" }
+                .ifBlank { "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ Р·Р°РїСЂРѕСЃ" }
 
             is ConstraintViolationException -> exception.constraintViolations
                 .joinToString("; ") { it.message }
-                .ifBlank { "Некорректный запрос" }
+                .ifBlank { "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ Р·Р°РїСЂРѕСЃ" }
 
-            is MethodArgumentTypeMismatchException -> "Некорректное значение параметра ${exception.name}"
-            else -> exception.message ?: "Некорректный запрос"
+            is MethodArgumentTypeMismatchException -> buildTypeMismatchMessage(exception.name)
+            else -> exception.message ?: "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ Р·Р°РїСЂРѕСЃ"
         }
+        logger.info(
+            "Handling bad request exception method={} path={} type={} message={}",
+            request.method,
+            request.requestURI,
+            exception.javaClass.simpleName,
+            message,
+        )
 
         return buildResponse(HttpStatus.BAD_REQUEST, ApiErrorCodes.VALIDATION_ERROR, message, request)
     }
@@ -53,22 +70,38 @@ class ApiControllerAdvice {
     fun handlePayloadTooLarge(
         exception: MaxUploadSizeExceededException,
         request: HttpServletRequest,
-    ): ResponseEntity<ErrorResponse> = buildResponse(
-        status = HttpStatus.PAYLOAD_TOO_LARGE,
-        code = ApiErrorCodes.PAYLOAD_TOO_LARGE,
-        message = exception.message ?: "Превышен допустимый размер файла",
-        request = request,
-    )
-
-    @ExceptionHandler(Exception::class)
-    @Suppress("UnusedParameter")
-    fun handleUnexpected(exception: Exception, request: HttpServletRequest): ResponseEntity<ErrorResponse> =
-        buildResponse(
-            status = HttpStatus.INTERNAL_SERVER_ERROR,
-            code = ApiErrorCodes.INTERNAL_ERROR,
-            message = "Внутренняя ошибка сервиса",
+    ): ResponseEntity<ErrorResponse> {
+        val message = exception.message ?: "РџСЂРµРІС‹С€РµРЅ РґРѕРїСѓСЃС‚РёРјС‹Р№ СЂР°Р·РјРµСЂ С„Р°Р№Р»Р°"
+        logger.info(
+            "Handling payload too large exception method={} path={} message={}",
+            request.method,
+            request.requestURI,
+            message,
+        )
+        return buildResponse(
+            status = HttpStatus.PAYLOAD_TOO_LARGE,
+            code = ApiErrorCodes.PAYLOAD_TOO_LARGE,
+            message = message,
             request = request,
         )
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handleUnexpected(exception: Exception, request: HttpServletRequest): ResponseEntity<ErrorResponse> {
+        logger.error(
+            "Handling unexpected exception method={} path={} type={}",
+            request.method,
+            request.requestURI,
+            exception.javaClass.simpleName,
+            exception,
+        )
+        return buildResponse(
+            status = HttpStatus.INTERNAL_SERVER_ERROR,
+            code = ApiErrorCodes.INTERNAL_ERROR,
+            message = "Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР° СЃРµСЂРІРёСЃР°",
+            request = request,
+        )
+    }
 
     private fun buildResponse(
         status: HttpStatus,
@@ -85,4 +118,11 @@ class ApiControllerAdvice {
             traceId = null,
         ),
     )
+
+    private fun buildTypeMismatchMessage(parameterName: String): String =
+        "РќРµРєРѕСЂСЂРµРєС‚РЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° $parameterName"
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ApiControllerAdvice::class.java)
+    }
 }

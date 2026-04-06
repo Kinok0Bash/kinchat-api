@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -85,9 +86,22 @@ class UserController(
         @RequestParam(defaultValue = DEFAULT_SEARCH_PAGE_SIZE)
         @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG)
         size: Int,
-    ): ResponseEntity<PagedUsersResponse> = ResponseEntity.ok(
-        userService.searchUsers(
-            currentUserId = currentUserProvider.getCurrentUser().userId,
+    ): ResponseEntity<PagedUsersResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP search users request received userId={} loginFilter={} firstNameFilterPresent={} " +
+                "lastNameFilterPresent={} matchMode={} excludeMe={} page={} size={}",
+            currentUser.userId,
+            login?.trim(),
+            !firstName.isNullOrBlank(),
+            !lastName.isNullOrBlank(),
+            matchMode,
+            excludeMe,
+            page,
+            size,
+        )
+        val usersResponse = userService.searchUsers(
+            currentUserId = currentUser.userId,
             login = login,
             firstName = firstName,
             lastName = lastName,
@@ -95,8 +109,15 @@ class UserController(
             excludeMe = excludeMe,
             page = page,
             size = size,
-        ),
-    )
+        )
+        logger.info(
+            "HTTP search users request completed userId={} returnedItems={} totalElements={}",
+            currentUser.userId,
+            usersResponse.items.size,
+            usersResponse.totalElements,
+        )
+        return ResponseEntity.ok(usersResponse)
+    }
 
     @GetMapping("/{login}")
     @Operation(summary = "Получить пользователя по login")
@@ -119,9 +140,17 @@ class UserController(
             ),
         ],
     )
-    fun getUserByLogin(@PathVariable login: String): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
-        userService.getPublicUserByLogin(login),
-    )
+    fun getUserByLogin(@PathVariable login: String): ResponseEntity<PublicUserResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info("HTTP get user by login request received actorUserId={} targetLogin={}", currentUser.userId, login)
+        val userResponse = userService.getPublicUserByLogin(login)
+        logger.info(
+            "HTTP get user by login request completed actorUserId={} resolvedLogin={}",
+            currentUser.userId,
+            userResponse.login,
+        )
+        return ResponseEntity.ok(userResponse)
+    }
 
     @PutMapping("/me/avatar", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @Operation(summary = "Заменить аватарку текущего пользователя")
@@ -156,11 +185,21 @@ class UserController(
     )
     fun uploadAvatar(
         @RequestPart("file") file: MultipartFile,
-    ): ResponseEntity<AvatarUploadResponse> = ResponseEntity.ok(
-        avatarService.uploadAvatar(currentUserProvider.getCurrentUser(), file),
-    )
+    ): ResponseEntity<AvatarUploadResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP upload avatar request received userId={} sizeBytes={} contentType={}",
+            currentUser.userId,
+            file.size,
+            file.contentType,
+        )
+        val avatarResponse = avatarService.uploadAvatar(currentUser, file)
+        logger.info("HTTP upload avatar request completed userId={}", currentUser.userId)
+        return ResponseEntity.ok(avatarResponse)
+    }
 
     companion object {
         private const val DEFAULT_SEARCH_PAGE_SIZE = "20"
+        private val logger = LoggerFactory.getLogger(UserController::class.java)
     }
 }

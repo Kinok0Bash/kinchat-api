@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -41,7 +42,19 @@ class WsTicketController(
             ),
         ],
     )
-    fun issueTicket(request: HttpServletRequest): ResponseEntity<WsTicketResponse> = ResponseEntity.ok(
-        wsTicketService.issueTicket(currentUserProvider.getCurrentUser().userId, request),
-    )
+    fun issueTicket(request: HttpServletRequest): ResponseEntity<WsTicketResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info("HTTP websocket ticket request received userId={}", currentUser.userId)
+        val ticketResponse = wsTicketService.issueTicket(currentUser.userId, request)
+        logger.info(
+            "HTTP websocket ticket request completed userId={} expiresAt={}",
+            currentUser.userId,
+            ticketResponse.expiresAt,
+        )
+        return ResponseEntity.ok(ticketResponse)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(WsTicketController::class.java)
+    }
 }

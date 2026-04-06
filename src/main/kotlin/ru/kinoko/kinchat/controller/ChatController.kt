@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -62,9 +63,23 @@ class ChatController(
     fun getChats(
         @RequestParam(defaultValue = "0") @Min(0) page: Int,
         @RequestParam(defaultValue = DEFAULT_CHAT_PAGE_SIZE) @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG) size: Int,
-    ): ResponseEntity<PagedChatsResponse> = ResponseEntity.ok(
-        chatService.getChats(currentUserProvider.getCurrentUser(), page, size),
-    )
+    ): ResponseEntity<PagedChatsResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP get chats request received userId={} page={} size={}",
+            currentUser.userId,
+            page,
+            size,
+        )
+        val chatsResponse = chatService.getChats(currentUser, page, size)
+        logger.info(
+            "HTTP get chats request completed userId={} returnedItems={} totalElements={}",
+            currentUser.userId,
+            chatsResponse.items.size,
+            chatsResponse.totalElements,
+        )
+        return ResponseEntity.ok(chatsResponse)
+    }
 
     @PostMapping("/direct")
     @Operation(summary = "Создать или получить direct chat")
@@ -94,9 +109,22 @@ class ChatController(
     )
     fun createDirectChat(
         @Valid @RequestBody request: CreateDirectChatRequest,
-    ): ResponseEntity<ChatSummaryResponse> = ResponseEntity.ok(
-        chatService.createDirectChat(currentUserProvider.getCurrentUser(), request),
-    )
+    ): ResponseEntity<ChatSummaryResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP create direct chat request received userId={} peerLogin={}",
+            currentUser.userId,
+            request.peerLogin.trim(),
+        )
+        val chatResponse = chatService.createDirectChat(currentUser, request)
+        logger.info(
+            "HTTP create direct chat request completed userId={} chatId={} participantLogin={}",
+            currentUser.userId,
+            chatResponse.chatId,
+            chatResponse.participant.login,
+        )
+        return ResponseEntity.ok(chatResponse)
+    }
 
     @GetMapping("/{chatId}/messages")
     @Operation(summary = "История сообщений чата")
@@ -137,9 +165,25 @@ class ChatController(
         @RequestParam(defaultValue = DEFAULT_CHAT_PAGE_SIZE)
         @Min(1) @Max(ApiConstants.MAX_PAGE_SIZE_LONG)
         size: Int,
-    ): ResponseEntity<PagedMessagesResponse> = ResponseEntity.ok(
-        chatService.getMessages(currentUserProvider.getCurrentUser(), chatId, page, size),
-    )
+    ): ResponseEntity<PagedMessagesResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP get messages request received userId={} chatId={} page={} size={}",
+            currentUser.userId,
+            chatId,
+            page,
+            size,
+        )
+        val messagesResponse = chatService.getMessages(currentUser, chatId, page, size)
+        logger.info(
+            "HTTP get messages request completed userId={} chatId={} returnedItems={} totalElements={}",
+            currentUser.userId,
+            chatId,
+            messagesResponse.items.size,
+            messagesResponse.totalElements,
+        )
+        return ResponseEntity.ok(messagesResponse)
+    }
 
     @PostMapping(path = ["/{chatId}/attachments"], consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @Operation(summary = "Загрузить файл или картинку в сообщение")
@@ -185,11 +229,29 @@ class ChatController(
     fun uploadAttachment(
         @PathVariable chatId: UUID,
         @ModelAttribute request: UploadAttachmentRequest,
-    ): ResponseEntity<MessageResponse> = ResponseEntity
-        .status(HttpStatus.CREATED)
-        .body(chatService.uploadAttachment(currentUserProvider.getCurrentUser(), chatId, request))
+    ): ResponseEntity<MessageResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP upload attachment request received userId={} chatId={} filePresent={} clientMessageId={}",
+            currentUser.userId,
+            chatId,
+            request.file != null,
+            request.clientMessageId,
+        )
+        val messageResponse = chatService.uploadAttachment(currentUser, chatId, request)
+        logger.info(
+            "HTTP upload attachment request completed userId={} chatId={} messageId={}",
+            currentUser.userId,
+            chatId,
+            messageResponse.messageId,
+        )
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(messageResponse)
+    }
 
     companion object {
         private const val DEFAULT_CHAT_PAGE_SIZE = "50"
+        private val logger = LoggerFactory.getLogger(ChatController::class.java)
     }
 }

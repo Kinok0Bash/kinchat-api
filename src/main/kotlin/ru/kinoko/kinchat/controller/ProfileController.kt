@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -44,9 +45,13 @@ class ProfileController(
             ),
         ],
     )
-    fun getProfile(): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
-        profileService.getCurrentUserProfile(currentUserProvider.getCurrentUser().userId),
-    )
+    fun getProfile(): ResponseEntity<PublicUserResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info("HTTP get profile request received for userId={}", currentUser.userId)
+        val userResponse = profileService.getCurrentUserProfile(currentUser.userId)
+        logger.info("HTTP get profile request completed for login={}", userResponse.login)
+        return ResponseEntity.ok(userResponse)
+    }
 
     @PatchMapping
     @Operation(summary = "Частично обновить профиль текущего пользователя")
@@ -76,7 +81,21 @@ class ProfileController(
     )
     fun patchProfile(
         @Valid @RequestBody request: UpdateProfileRequest,
-    ): ResponseEntity<PublicUserResponse> = ResponseEntity.ok(
-        profileService.updateCurrentUserProfile(currentUserProvider.getCurrentUser().userId, request),
-    )
+    ): ResponseEntity<PublicUserResponse> {
+        val currentUser = currentUserProvider.getCurrentUser()
+        logger.info(
+            "HTTP patch profile request received userId={} loginChanged={} firstNameChanged={} lastNameChanged={}",
+            currentUser.userId,
+            request.login != null,
+            request.firstName != null,
+            request.lastName != null,
+        )
+        val userResponse = profileService.updateCurrentUserProfile(currentUser.userId, request)
+        logger.info("HTTP patch profile request completed userId={} login={}", currentUser.userId, userResponse.login)
+        return ResponseEntity.ok(userResponse)
+    }
+
+    companion object {
+        private val logger = LoggerFactory.getLogger(ProfileController::class.java)
+    }
 }
