@@ -11,11 +11,13 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
+import org.springframework.util.AntPathMatcher
 import org.springframework.web.filter.OncePerRequestFilter
 import ru.kinoko.kinchat.dto.common.ErrorResponse
 import ru.kinoko.kinchat.exception.UnauthorizedException
 import ru.kinoko.kinchat.service.JwtService
 import ru.kinoko.kinchat.util.ApiErrorCodes
+import ru.kinoko.kinchat.util.SecurityPaths
 import java.time.OffsetDateTime
 
 @Component
@@ -23,6 +25,15 @@ class JwtAuthenticationFilter(
     private val jwtService: JwtService,
     private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
+    private val pathMatcher = AntPathMatcher()
+
+    override fun shouldNotFilter(request: HttpServletRequest): Boolean {
+        val path = request.requestURI
+        return SecurityPaths.PUBLIC_ENDPOINT_PATTERNS.any { pattern ->
+            pathMatcher.match(pattern, path)
+        }
+    }
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
