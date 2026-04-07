@@ -29,7 +29,7 @@ springdoc:
 app:
   auth:
     secret: ${APP_AUTH_SECRET:kinchat-super-secret-key-please-change-me-kinchat-super-secret-key}
-    access-life-time: 15m
+    access-life-time: 1m
     refresh-life-time: 30d
     ws-ticket-life-time: 5m
   user:

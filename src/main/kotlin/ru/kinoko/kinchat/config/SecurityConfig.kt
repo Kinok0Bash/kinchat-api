@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import ru.kinoko.kinchat.security.JwtAuthenticationFilter
+import ru.kinoko.kinchat.util.SecurityPaths
 
 @Configuration
 @EnableWebSecurity
@@ -34,20 +35,7 @@ class SecurityConfig(
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { auth ->
                 auth
-                    .requestMatchers(
-                        "/api/auth/register",
-                        "/api/auth/login",
-                        "/api/auth/refresh",
-                        "/api/auth/logout",
-                        "/api/docs/**",
-                        "/api/swagger/**",
-                        "/v3/api-docs/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/actuator/health",
-                        "/error",
-                        "/ws",
-                    )
+                    .requestMatchers(*SecurityPaths.PUBLIC_ENDPOINT_PATTERNS)
                     .permitAll()
                     .requestMatchers(HttpMethod.OPTIONS, "/**")
                     .permitAll()
